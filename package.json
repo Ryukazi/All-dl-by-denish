@@ -1,10 +1,10 @@
 {
-  "name": "denish-downloader",
+  "name": "dl",
   "version": "1.0.0",
-  "description": "Universal video downloader CLI (YouTube, TikTok, Instagram, etc.) by Lord Denish",
+  "description": "Universal video downloader CLI (YouTube, TikTok, Instagram, etc.)",
   "main": "index.js",
   "bin": {
-    "denish-dl": "./index.js"
+    "dl": "./index.js"
   },
   "author": "Lord Denish",
   "license": "MIT",
