@@ -27,7 +27,15 @@ if (!url) {
 
 // Detect platform
 const hostname = new URL(url).hostname.toLowerCase();
-const platform = Object.keys(PLATFORM_API_MAP).find(p => hostname.includes(p));
+
+let platform = null;
+// Fix for YouTube URLs
+if (hostname.includes("youtube") || hostname.includes("youtu.be")) {
+  platform = "youtube";
+} else {
+  platform = Object.keys(PLATFORM_API_MAP).find(p => hostname.includes(p));
+}
+
 if (!platform) {
   console.log("❌ Unsupported platform!");
   process.exit(1);
