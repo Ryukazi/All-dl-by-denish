@@ -4,16 +4,17 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
+// Mapping platform to API endpoints
 const PLATFORM_API_MAP = {
-  "instagram": "https://universaldownloaderapi.vercel.app/api/meta/download?url=",
-  "facebook": "https://universaldownloaderapi.vercel.app/api/meta/download?url=",
-  "youtube": "https://yt-dl-mp4.vercel.app/api/ytmp4?url=",
-  "tiktok": "https://tiktok-dl-kappa-jade.vercel.app/api/tiktok?url=",
-  "reddit": "https://universaldownloaderapi.vercel.app/api/reddit/download?url=",
-  "pinterest": "https://universaldownloaderapi.vercel.app/api/pinterest/download?url=",
-  "threads": "https://universaldownloaderapi.vercel.app/api/threads/download?url=",
-  "linkedin": "https://universaldownloaderapi.vercel.app/api/linkedin/download?url=",
-  "twitter": "https://universaldownloaderapi.vercel.app/api/twitter/download?url=",
+  instagram: "https://universaldownloaderapi.vercel.app/api/meta/download?url=",
+  facebook: "https://universaldownloaderapi.vercel.app/api/meta/download?url=",
+  youtube: "https://yt-dl-mp4.vercel.app/api/ytmp4?url=",
+  tiktok: "https://tiktok-dl-kappa-jade.vercel.app/api/tiktok?url=",
+  reddit: "https://universaldownloaderapi.vercel.app/api/reddit/download?url=",
+  pinterest: "https://universaldownloaderapi.vercel.app/api/pinterest/download?url=",
+  threads: "https://universaldownloaderapi.vercel.app/api/threads/download?url=",
+  linkedin: "https://universaldownloaderapi.vercel.app/api/linkedin/download?url=",
+  twitter: "https://universaldownloaderapi.vercel.app/api/twitter/download?url=",
   "x.com": "https://universaldownloaderapi.vercel.app/api/twitter/download?url="
 };
 
@@ -45,20 +46,35 @@ fs.ensureDirSync(downloadDir);
     const res = await axios.get(apiUrl, { timeout: 30000 });
     const data = res.data;
 
-    // Extract video URL from API response
-    const videoUrl =
-      data?.data?.[0]?.url ||
-      data?.data?.data?.[0]?.url ||
-      data?.result?.mp4 ||
-      data?.data?.meta?.media?.[0]?.hd ||
-      data?.data?.meta?.media?.[0]?.org;
+    // Extract video URL from API response (supports all platforms)
+    let videoUrl = null;
+
+    // TikTok / Instagram / Pinterest / Threads / Twitter / X / LinkedIn
+    if (data?.data?.[0]?.url) videoUrl = data.data[0].url;
+    // Some nested APIs
+    else if (data?.data?.data?.[0]?.url) videoUrl = data.data.data[0].url;
+    // YouTube
+    else if (data?.result?.mp4) videoUrl = data.result.mp4;
+    // Facebook (meta API)
+    else if (data?.data?.data?.[0]?.url) videoUrl = data.data.data[0].url;
+    // Other fallback (HD / original media)
+    else if (data?.data?.meta?.media?.[0]?.hd) videoUrl = data.data.meta.media[0].hd;
+    else if (data?.data?.meta?.media?.[0]?.org) videoUrl = data.data.meta.media[0].org;
 
     if (!videoUrl) throw new Error("Video URL not found");
 
-    const output = path.join(downloadDir, `video_${Date.now()}.mp4`);
+    // Create output file path
+    const timestamp = Date.now();
+    const output = path.join(downloadDir, `${platform}_${timestamp}.mp4`);
     console.log("⏳ Downloading...");
 
-    const videoRes = await axios({ url: videoUrl, method: "GET", responseType: "stream" });
+    // Download video
+    const videoRes = await axios({
+      url: videoUrl,
+      method: "GET",
+      responseType: "stream"
+    });
+
     const writer = fs.createWriteStream(output);
     videoRes.data.pipe(writer);
 
