@@ -4,7 +4,6 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
-// Map of supported platforms and their APIs
 const PLATFORM_API_MAP = {
   "instagram": "https://universaldownloaderapi.vercel.app/api/meta/download?url=",
   "facebook": "https://universaldownloaderapi.vercel.app/api/meta/download?url=",
@@ -25,6 +24,7 @@ if (!url) {
   process.exit(1);
 }
 
+// Detect platform
 const hostname = new URL(url).hostname.toLowerCase();
 const platform = Object.keys(PLATFORM_API_MAP).find(p => hostname.includes(p));
 if (!platform) {
@@ -32,15 +32,20 @@ if (!platform) {
   process.exit(1);
 }
 
+// Build API URL
 const apiUrl = PLATFORM_API_MAP[platform] + encodeURIComponent(url);
 console.log(`🚀 Fetching from ${platform}...`);
+
+// Download folder on phone
+const downloadDir = "/sdcard/Download";
+fs.ensureDirSync(downloadDir);
 
 (async () => {
   try {
     const res = await axios.get(apiUrl, { timeout: 30000 });
     const data = res.data;
 
-    // Extract video URL from response
+    // Extract video URL from API response
     const videoUrl =
       data?.data?.[0]?.url ||
       data?.data?.data?.[0]?.url ||
@@ -50,19 +55,16 @@ console.log(`🚀 Fetching from ${platform}...`);
 
     if (!videoUrl) throw new Error("Video URL not found");
 
-    // Ensure Downloads folder exists
-    const downloadDir = "/sdcard/Download";
-    fs.ensureDirSync(downloadDir);
-
     const output = path.join(downloadDir, `video_${Date.now()}.mp4`);
-    console.log(`⏳ Downloading to ${output}...`);
+    console.log("⏳ Downloading...");
 
     const videoRes = await axios({ url: videoUrl, method: "GET", responseType: "stream" });
     const writer = fs.createWriteStream(output);
     videoRes.data.pipe(writer);
 
     writer.on("finish", () => console.log(`✅ Saved as ${output}`));
-    writer.on("error", err => console.error("❌ Download failed:", err.message));
+    writer.on("error", err => console.error("❌ Error saving video:", err));
+
   } catch (err) {
     console.error("❌ Error:", err.message);
   }
